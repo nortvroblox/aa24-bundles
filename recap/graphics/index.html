@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+		<style>
+			@font-face {
+				font-family: "Metropolitano-Bold";
+				src: url("./Metropolitano-Bold.ttf") format("truetype");
+			}
+			@font-face {
+				font-family: "Metropolitano-Regular";
+				src: url("./Metropolitano-Regular.ttf") format("truetype");
+			}
+			.font-metropolitano-bold {
+				font-family: "Metropolitano-Bold";
+			}
+			.font-metropolitano-regular {
+				font-family: "Metropolitano-Regular";
+			}
+		</style>
+	</head>
+
+	<body class="w-screen h-screen flex justify-center items-center bg-black">
+		<div class="w-full h-full" id="app">
+			<video
+				id="video"
+				src="./Recap-Base.webm"
+				class="w-full h-full object-cover absolute top-0 left-0"
+				style="filter: brightness(1.25)"
+			></video>
+			{{currentTimestamp}}
+			<div
+				class="w-full h-1/4 absolute bottom-0 left-0 flex items-center justify-around px-16 gap-8 transition-all duration-[2s]"
+				:style="{opacity: (currentTimestamp > 0.05 && currentTimestamp < 7) ? 1 : 0}"
+			>
+				<p
+					class="text-white font-metropolitano-bold text-[10rem] text-center"
+				>
+					RECAP
+				</p>
+				<div
+					class="flex flex-row gap-2 w-full h-full justify-center items-center"
+				>
+					<template
+						v-for="(winner, category) in categories"
+						:key="category"
+					>
+						<div class="flex flex-col gap-2 flex-1 h-2/3">
+                            <p
+                                class="text-white font-metropolitano-bold text-[43px] text-center filter drop-shadow-lg"
+                            >
+                                {{category}}
+                            </p>
+                            <p
+                                class="text-white font-metropolitano-regular text-[40px] text-center filter drop-shadow-lg"
+                            >
+                                {{winner}}
+                            </p>
+						</div>
+					</template>
+				</div>
+			</div>
+		</div>
+		<script type="module">
+
+			const { createApp } = Vue;
+
+			createApp({
+				data() {
+					return {
+						categories: {
+							"Best Airport": "Skiathos Airport by Electro",
+							"Best CSG Aircraft Developer": "asd",
+							"Best CSG Livery Developer": "asd",
+							"Best CSG Scenery Developer": "asd",
+						},
+						currentTimestamp: 0,
+					};
+				},
+				mounted() {
+                    const video = document.getElementById("video");
+					setInterval(() => {
+						this.currentTimestamp = video.currentTime;
+					}, 100);
+					
+                    nodecg.listenFor("showRecap", (data) => {
+                        this.categories = data.categories;
+                        video.play();
+                        video.currentTime = 0;
+                    });
+
+                    nodecg.listenFor("exitRecap", (data) => {
+                        video.play();
+                        video.currentTime = 6;
+                    });
+				},
+			}).mount("#app");
+		</script>
+	</body>
+</html>

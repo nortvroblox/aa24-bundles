@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+		<style>
+			@font-face {
+				font-family: "Metropolitano-Bold";
+				src: url("./Metropolitano-Bold.ttf") format("truetype");
+			}
+			@font-face {
+				font-family: "Metropolitano-Regular";
+				src: url("./Metropolitano-Regular.ttf") format("truetype");
+			}
+			.font-metropolitano-bold {
+				font-family: "Metropolitano-Bold";
+			}
+			.font-metropolitano-regular {
+				font-family: "Metropolitano-Regular";
+			}
+		</style>
+	</head>
+
+	<body class="w-screen h-screen">
+		<div id="app" class="w-full h-full flex items-center">
+			<video
+				id="video"
+				src="./Credit-Base.webm"
+				class="w-full h-full object-cover absolute top-0 left-0 transition-all duration-500 z-[-1]"
+				style="filter: brightness(1.25)"
+				:style="{opacity: isVisible ? 1 : 0}"
+			></video>
+			<p
+				class="text-white text-center text-6xl w-[27%] mt-[7rem] transition-all duration-[2s]"
+				:style="{opacity: (footageTime > 0.05 && isVisible) ? 1 : 0}"
+			>
+				<template v-for="(page, pageIndex) in content">
+					<template v-if="pageIndex === currentContentIndex">
+						<template
+							v-for="(subpage, subpageIndex) in page.subpages"
+						>
+							<div class="flex flex-col mt-4">
+								<span
+									class="font-metropolitano-bold text-[45px]"
+									>{{ subpage.heading }}</span
+								>
+								<div class="flex flex-col mt-4">
+									<template
+										v-for="(value, valueIndex) in subpage.values"
+									>
+										<span
+											class="font-metropolitano-regular text-[39px]"
+											v-if="!value.includes('[ClearlyDev]') && !value.includes('[AviWordmark]')"
+											>{{ value }}</span
+										>
+										<img
+											v-else
+											:src="`./${value.replace('[', '').replace(']', '')}.${value.includes('[ClearlyDev]') ? 'png' : 'svg'}`"
+											alt="Logo"
+											class="h-12 mx-auto"
+										/>
+									</template>
+								</div>
+							</div>
+							<br />
+						</template>
+					</template>
+				</template>
+			</p>
+		</div>
+		<script type="module">
+			const { createApp } = Vue;
+
+			createApp({
+				data() {
+					return {
+						isVisible: false,
+						currentContentIndex: 0,
+						footageTime: 0,
+						content: [
+							{
+								subpages: [
+									{
+										heading: "Producers",
+										values: [
+											"DANIELSBERG - Executive Producer",
+										],
+									},
+									{
+										heading: "Booking",
+										values: [
+											"Fi_tyo - Head of Booking",
+											"yeovns ",
+											"SplendidBag",
+										],
+									},
+									{
+										heading: "Judge Panel",
+										values: [
+											"Anthrum - Head of Judges",
+											"OMG_Gaming404 ",
+											"AlreadyJosh ",
+											"syntheticomposite",
+										],
+									},
+								],
+								time: 3, // Reduced time for testing
+							},
+							{
+								subpages: [
+									{
+										heading: "Page 2",
+										values: ["This is page 2"],
+									},
+								],
+								time: 4, // Reduced time for testing
+							},
+						],
+						pageStartTime: 0, // Start time of the current page
+						pageTimer: null, // Timer for page switching
+					};
+				},
+				mounted() {
+					const video = document.getElementById("video");
+					nodecg.listenFor("showCredit", (data) => {
+						console.log("show", data);
+						if (data.creditPages.length > 0) {
+							this.content = data.creditPages;
+						}
+						video.currentTime = 0;
+						video.play();
+						this.isVisible = true;
+						this.currentContentIndex = 0;
+						this.pageStartTime = Date.now(); // Initialize page start time
+						this.startPageTimer(); // Start the timer for the first page
+					});
+
+					nodecg.listenFor("exitCredit", (data) => {
+						console.log("exit", data);
+						this.isVisible = false;
+						this.stopPageTimer(); // Stop the timer when exiting
+					});
+
+					setInterval(() => {
+						this.footageTime = Math.floor(video.currentTime);
+					}, 50);
+
+					// handle switching between pages
+				},
+				methods: {
+					startPageTimer() {
+						this.stopPageTimer(); // Clear any existing timer
+
+						this.pageTimer = setTimeout(() => {
+							if (
+								this.currentContentIndex <
+								this.content.length - 1
+							) {
+								this.currentContentIndex++;
+								this.pageStartTime = Date.now(); // Reset start time for the new page
+								this.startPageTimer(); // Start timer for the next page
+							} else {
+								// Optionally, loop back to the first page or stop
+								// this.currentContentIndex = 0;
+								// this.pageStartTime = Date.now();
+								// this.startPageTimer();
+								this.isVisible = false;
+								this.stopPageTimer();
+							}
+						}, this.content[this.currentContentIndex].time * 1000);
+					},
+					stopPageTimer() {
+						if (this.pageTimer) {
+							clearTimeout(this.pageTimer);
+							this.pageTimer = null;
+						}
+					},
+				},
+			}).mount("#app");
+		</script>
+	</body>
+</html>

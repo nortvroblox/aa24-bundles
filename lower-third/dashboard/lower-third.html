@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+	</head>
+	<body>
+        <div id="app">
+            <div class="w-full h-full flex flex-col gap-2 py-4 justify-center items-center">
+                <div class="flex flex-col gap-2">
+                    <label for="top-text-options" class="text-black">Top Text Options:</label>
+                    <select id="top-text-options" v-model="selectedTopTextOption" class="border-2 border-gray-300 p-2 text-black">
+                        <option value="Hosts">Hosts</option>
+                        <option v-for="(nominees, category) in allCategories" :key="category" :value="'Winner of ' + category">Winner of {{ category }}</option>
+                        <option value="custom">Custom Input</option>
+                    </select>
+                </div>
+
+                <input type="text" v-if="selectedTopTextOption === 'custom'" v-model="topText" placeholder="Top Text" class="border-2 border-gray-300 p-2 m-2 text-black">
+
+                <div class="flex flex-col gap-2">
+                    <label for="bottom-text-options" class="text-black">Bottom Text Options:</label>
+                    <select id="bottom-text-options" v-model="selectedBottomTextOption" class="border-2 border-gray-300 p-2 text-black">
+                        <option v-if="selectedTopTextOption !== 'Hosts'" v-for="nominee in selectedCategoryNominees" :key="nominee" :value="nominee">{{ nominee }}</option>
+                        <option v-if="selectedTopTextOption === 'Hosts'" v-for="host in hosts" :key="host" :value="host">{{ host }}</option>
+                        <option value="custom">Custom Input</option>
+                    </select>
+                </div>
+
+                <input type="text" v-if="selectedBottomTextOption === 'custom'" v-model="bottomText" placeholder="Bottom Text" class="border-2 border-gray-300 p-2 m-2 text-black">
+                
+                <button @click="showLowerThird" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Show Lower Third</button>
+                <button @click="exitLowerThird" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Exit Lower Third</button>
+            </div>
+        </div>
+
+        <script type="module">
+            const video = document.getElementById('video');
+            const lottie = document.querySelector('lottie-player');
+
+            const development_categories = {
+                "Best Airport": [
+                    "Skiathos Airport by Electro",
+                    "Gdansk Airport by Temsons",
+                    "Flughafen Berlin Brandenburg by APSIS",
+                    "Gazipaşa-Alanya Airport by Vainilla",
+                ],
+                "Best CSG Aircraft Developer": [
+                    "Yokai (keimatsuda)",
+                    "Efficient7x",
+                    "Ollie737800",
+                    "Shayehui",
+                ],
+                "Best Mesh Aircraft Developer": ["Aeroware", "ZEROtech", "Eurowhite", "Vuela"],
+                "Best Tech Group": ["ZEROtech", "SKYHANGAR", "AeroSys", "TechHaven"],
+            };
+
+            const community_categories = {
+                "Best Event": [
+                    "ZEROFest 2024",
+                    "Royal International Air Tattoo 2024",
+                    "Virtual Roblox Festival of Aerobatic Teams",
+                    "Lineer Aerofest",
+                ],
+                "Best Display Team": [
+                    "RAF Typhoon",
+                    "Virtual Roblox Blue Angels",
+                    "Virtual Roblox Red Arrows",
+                    "Virtual Roblox Thunderbirds",
+                ],
+                "Best YouTuber": ["Executive757", "Neoptic", "UniqetzFlights", "Wes"],
+                "Best Innovator": ["Parcel", "South Pacific Airways", "Unify", "Aerios"],
+            };
+
+            const game_categories = {
+                "Best Sound Design": [
+                    "Project Flight",
+                    "Aeronautica",
+                    "Flightline",
+                    "Emergency Landing",
+                ],
+                "Best Trailer": [
+                    "Project Flight Update 7",
+                    "Pilot Training Flight Simulator 2024",
+                    "Introducing airGreece",
+                    "PIA A320 Reimagined",
+                ],
+                "Best Simulator": [
+                    "Project Flight",
+                    "Aeronautica",
+                    "NOVUS Flight Simulator",
+                    "Flightline",
+                ],
+                "Best Game": [
+                    "Cabin Crew Simulator",
+                    "Pilot Training Flight Simulator",
+                    "Airplane Simulator",
+                    "Wings of Glory",
+                ],
+            };
+
+            const airline_categories = {
+                "Best Airline Tech": ["Qatar", "SkyLink", "LeMonde Airlines", "Skyrden"],
+                "Best Airline under 3000": [
+                    "SWR | Swiss International Air Lines",
+                    "TAP | Transportes Aeros Portugueses",
+                    "WINAIR",
+                    "Icelandair",
+                ],
+                "Best Airline 3000 - 10, 000": [
+                    "Delta Air Lines",
+                    "Skyrden",
+                    "Qantas QF",
+                    "Flure Group",
+                ],
+                "Best Airline over 10, 000": ["Ryanair", "SkyLink", "Turkish Airlines", "Qatar"],
+            };
+
+            const clearlydev_categories = {
+                "ClearlyDev Best Performing Store": [
+                    "AeroElite",
+                    "SFZ4",
+                    "MiaTech",
+                    "Aero Tech",
+                ]
+            }
+            const app = Vue.createApp({
+                data() {
+                    return {
+                        topText: '',
+                        bottomText: '',
+                        selectedTopTextOption: 'Hosts',
+                        selectedBottomTextOption: '',
+                        selectedCategory: '',
+                        allCategories: {
+                            ...development_categories,
+                            ...community_categories,
+                            ...game_categories,
+                            ...airline_categories,
+                            ...clearlydev_categories
+                        },
+                        hosts: ["OnePatronimo", "WateryTheGame", "OnePatronimo & WateryTheGame"]
+                    }
+                },
+                computed: {
+                    selectedCategoryNominees() {
+                        if (this.selectedTopTextOption.startsWith("Winner of ")) {
+                            const categoryName = this.selectedTopTextOption.replace("Winner of ", "");
+                            return this.allCategories[categoryName] || [];
+                        }
+                        return [];
+                    }
+                },
+                methods: {
+                    showLowerThird() {
+                        // Use selected options or custom input for topText and bottomText
+                        const topTextToSend = this.selectedTopTextOption === 'custom' ? this.topText : this.selectedTopTextOption;
+                        const bottomTextToSend = this.selectedBottomTextOption === 'custom' ? this.bottomText : this.selectedBottomTextOption;
+
+                        nodecg.sendMessage('showLowerThird', {
+                            topText: topTextToSend,
+                            bottomText: bottomTextToSend
+                        });
+                    },
+                    exitLowerThird() {
+                        nodecg.sendMessage('exitLowerThird');
+                    }
+                }
+            });
+
+            app.mount('#app');
+        </script>
+	</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+	</head>
+	<body>
+        <div id="app">
+            <div class="w-full h-full flex flex-col gap-2 py-4 justify-center items-center">
+                <div class="flex flex-col gap-2">
+                    <label for="category-group-options" class="text-black">Category Group:</label>
+                    <select id="category-group-options" v-model="selectedCategoryGroup" class="border-2 border-gray-300 p-2 text-black">
+                        <option v-for="(group, groupName) in categoryGroups" :key="groupName" :value="groupName">{{ groupName }}</option>
+                        <option value="custom">Custom Category Group</option>
+                    </select>
+                </div>
+
+                <input type="text" v-if="selectedCategoryGroup === 'custom'" v-model="customCategoryGroupName" placeholder="Custom Category Group Name" class="border-2 border-gray-300 p-2 m-2 text-black">
+
+                <div v-if="selectedCategoryGroup && selectedCategoryGroup !== 'custom'" class="flex flex-col gap-2">
+                    <div v-for="(category, categoryName) in selectedCategories" :key="categoryName" class="flex flex-col gap-2">
+                        <label :for="'category-' + categoryName" class="text-black">{{ categoryName }}:</label>
+                        <select :id="'category-' + categoryName" v-model="selectedWinners[categoryName]" class="border-2 border-gray-300 p-2 text-black">
+                            <option v-for="nominee in category" :key="nominee" :value="nominee">{{ nominee }}</option>
+                            <option value="custom">Custom Winner</option>
+                        </select>
+                        <input v-if="selectedWinners[categoryName] === 'custom'" type="text" v-model="customWinners[categoryName]" :placeholder="'Custom Winner for ' + categoryName" class="border-2 border-gray-300 p-2 m-2 text-black">
+                    </div>
+                </div>
+                
+                <div v-if="selectedCategoryGroup === 'custom'" class="flex flex-col gap-2">
+                    <div v-for="(category, index) in customCategories" :key="index" class="flex flex-col gap-2">
+                        <label :for="'custom-category-' + index" class="text-black">Custom Category {{index + 1}}:</label>
+                        <input type="text" :id="'custom-category-' + index" v-model="category.name" placeholder="Custom Category Name" class="border-2 border-gray-300 p-2 m-2 text-black">
+
+                        <label :for="'custom-winner-' + index" class="text-black">Winner for {{ category.name }}:</label>
+                        <input type="text" :id="'custom-winner-' + index" v-model="category.winner" placeholder="Custom Winner" class="border-2 border-gray-300 p-2 m-2 text-black">
+
+                        <button @click="removeCustomCategory(index)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove Category</button>
+                    </div>
+                    <button @click="addCustomCategory" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Add Custom Category</button>
+                </div>
+                
+                <button @click="showRecap" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Show Lower Third</button>
+                <button @click="exitRecap" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Exit Lower Third</button>
+            </div>
+        </div>
+
+        <script type="module">
+            const development_categories = {
+                "Best Airport": [
+                    "Skiathos Airport by Electro",
+                    "Gdansk Airport by Temsons",
+                    "Flughafen Berlin Brandenburg by APSIS",
+                    "Gazipaşa-Alanya Airport by Vainilla",
+                ],
+                "Best CSG Aircraft Developer": [
+                    "Yokai (keimatsuda)",
+                    "Efficient7x",
+                    "Ollie737800",
+                    "Shayehui",
+                ],
+                "Best Mesh Aircraft Developer": ["Aeroware", "ZEROtech", "Eurowhite", "Vuela"],
+                "Best Tech Group": ["ZEROtech", "SKYHANGAR", "AeroSys", "TechHaven"],
+            };
+
+            const community_categories = {
+                "Best Event": [
+                    "ZEROFest 2024",
+                    "Royal International Air Tattoo 2024",
+                    "Virtual Roblox Festival of Aerobatic Teams",
+                    "Lineer Aerofest",
+                ],
+                "Best Display Team": [
+                    "RAF Typhoon",
+                    "Virtual Roblox Blue Angels",
+                    "Virtual Roblox Red Arrows",
+                    "Virtual Roblox Thunderbirds",
+                ],
+                "Best YouTuber": ["Executive757", "Neoptic", "UniqetzFlights", "Wes"],
+                "Best Innovator": ["Parcel", "South Pacific Airways", "Unify", "Aerios"],
+            };
+
+            const game_categories = {
+                "Best Sound Design": [
+                    "Project Flight",
+                    "Aeronautica",
+                    "Flightline",
+                    "Emergency Landing",
+                ],
+                "Best Trailer": [
+                    "Project Flight Update 7",
+                    "Pilot Training Flight Simulator 2024",
+                    "Introducing airGreece",
+                    "PIA A320 Reimagined",
+                ],
+                "Best Simulator": [
+                    "Project Flight",
+                    "Aeronautica",
+                    "NOVUS Flight Simulator",
+                    "Flightline",
+                ],
+                "Best Game": [
+                    "Cabin Crew Simulator",
+                    "Pilot Training Flight Simulator",
+                    "Airplane Simulator",
+                    "Wings of Glory",
+                ],
+            };
+
+            const airline_categories = {
+                "Best Airline Tech": ["Qatar", "SkyLink", "LeMonde Airlines", "Skyrden"],
+                "Best Airline under 3000": [
+                    "SWR | Swiss International Air Lines",
+                    "TAP | Transportes Aeros Portugueses",
+                    "WINAIR",
+                    "Icelandair",
+                ],
+                "Best Airline 3000 - 10, 000": [
+                    "Delta Air Lines",
+                    "Skyrden",
+                    "Qantas QF",
+                    "Flure Group",
+                ],
+                "Best Airline over 10, 000": ["Ryanair", "SkyLink", "Turkish Airlines", "Qatar"],
+            };
+
+            const clearlydev_categories = {
+                "ClearlyDev Best Performing Store": [
+                    "AeroElite",
+                    "SFZ4",
+                    "MiaTech",
+                    "Aero Tech",
+                ]
+            }
+
+            const app = Vue.createApp({
+                data() {
+                    return {
+                        selectedCategoryGroup: '',
+                        customCategoryGroupName: '',
+                        selectedWinners: {},
+                        customWinners: {},
+                        categoryGroups: {
+                            "Development": development_categories,
+                            "Community": community_categories,
+                            "Game": game_categories,
+                            "Airline": airline_categories,
+                            "ClearlyDev": clearlydev_categories
+                        },
+                        customCategories: []
+                    }
+                },
+                computed: {
+                    selectedCategories() {
+                        if (this.selectedCategoryGroup !== "custom") {
+                            return this.categoryGroups[this.selectedCategoryGroup] || {};
+                        } else {
+                            return {}
+                        }
+                    }
+                },
+                methods: {
+                    addCustomCategory() {
+                        this.customCategories.push({name: '', winner: ''});
+                    },
+                    removeCustomCategory(index) {
+                        this.customCategories.splice(index, 1);
+                    },
+                    showRecap() {
+                        let dataToSend = {};
+
+                        if (this.selectedCategoryGroup === 'custom') {
+                            dataToSend.categoryGroup = this.customCategoryGroupName;
+                            dataToSend.categories = {};
+                            this.customCategories.forEach(category => {
+                                dataToSend.categories[category.name] = category.winner;
+                            });
+                        } else {
+                            dataToSend.categoryGroup = this.selectedCategoryGroup;
+                            dataToSend.categories = {};
+                            for (const categoryName in this.selectedCategories) {
+                                dataToSend.categories[categoryName] = this.selectedWinners[categoryName] === 'custom' ? this.customWinners[categoryName] : this.selectedWinners[categoryName];
+                            }
+                        }
+
+                        nodecg.sendMessage('showRecap', dataToSend);
+                    },
+                    exitRecap() {
+                        nodecg.sendMessage('exitRecap');
+                    }
+                }
+            });
+
+            app.mount('#app');
+        </script>
+	</body>
+</html>

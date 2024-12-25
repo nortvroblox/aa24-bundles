@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="w-full h-full flex flex-col gap-2 py-4 justify-center items-center">
+            <div class="w-3/4 flex flex-col gap-4">
+                <div v-for="(page, pageIndex) in creditPages" :key="pageIndex" class="border p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">Page {{ pageIndex + 1 }}</h3>
+
+                    <div class="flex flex-col gap-2 mb-4">
+                        <div v-for="(subpage, subpageIndex) in page.subpages" :key="subpageIndex" class="border p-2 rounded-lg">
+                            <h4 class="font-medium mb-1">Subpage {{ subpageIndex + 1 }}</h4>
+
+                            <label :for="`heading-${pageIndex}-${subpageIndex}`" class="font-medium">Heading:</label>
+                            <input type="text" :id="`heading-${pageIndex}-${subpageIndex}`" v-model="subpage.heading" class="text-black border p-2 rounded" />
+                            <br /> <!-- you can tell i dont care anymore-->
+                            <label :for="`values-${pageIndex}-${subpageIndex}`" class="font-medium">Values (one per line):</label>
+                            <textarea :id="`values-${pageIndex}-${subpageIndex}`" v-model="subpage.values" class="text-black border p-2 rounded" rows="5"></textarea>
+                            <br />
+                            <button @click="removeSubpage(page, subpageIndex)" class="mt-2 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-sm">
+                                Remove Subpage
+                            </button>
+                        </div>
+
+                        <button @click="addSubpage(page)" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-sm">
+                            Add Subpage
+                        </button>
+                    </div>
+
+                    <label :for="`time-${pageIndex}`" class="font-medium">Display Time (seconds):</label>
+                    <input type="number" :id="`time-${pageIndex}`" v-model.number="page.time" class="text-black border p-2 rounded" />
+
+                    <button @click="removePage(pageIndex)" class="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                        Remove Page
+                    </button>
+                </div>
+
+                <button @click="addPage" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Add Page
+                </button>
+            </div>
+
+            <div class="w-3/4 flex flex-col gap-4 mt-8">
+                <h3 class="font-semibold">Import/Export</h3>
+                <div class="flex gap-4">
+                    <button @click="exportToJson" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Export to JSON
+                    </button>
+                    <input type="file" @change="importFromJson" class="text-black" />
+                </div>
+
+                <textarea v-model="jsonInput" placeholder="Paste JSON here to import" class="text-black border p-2 rounded w-full" rows="5"></textarea>
+                <button @click="importFromJsonInput" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Import from JSON Input
+                </button>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="mt-8">
+                <button @click="showCredit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Show Credit
+                </button>
+                <button @click="exitCredit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                    Exit Credit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const app = Vue.createApp({
+            data() {
+                return {
+                    creditPages: [
+                        {
+                            subpages: [
+                                {
+                                    heading: "Subpage 1 Heading",
+                                    values: ["Value 1", "Value 2"],
+                                },
+                                {
+                                    heading: "Subpage 2 Heading",
+                                    values: ["Value 3", "Value 4", "Value 5"],
+                                },
+                            ],
+                            time: 5,
+                        },
+                    ],
+                    jsonInput: "",
+                };
+            },
+            methods: {
+                showCredit() {
+                    console.log("show");
+
+                    // Convert textarea values to arrays
+                    const formattedCreditPages = this.creditPages.map(page => ({
+                        ...page,
+                        subpages: page.subpages.map(subpage => ({
+                            ...subpage,
+                            values: typeof subpage.values === 'string' ? subpage.values.split('\n').filter(line => line.trim() !== '') : subpage.values,
+                        })),
+                    }));
+
+                    nodecg.sendMessage("showCredit", {
+                        creditPages: formattedCreditPages
+                    });
+                },
+                exitCredit() {
+                    nodecg.sendMessage("exitCredit");
+                },
+                addPage() {
+                    this.creditPages.push({
+                        subpages: [
+                            {
+                                heading: "New Subpage Heading",
+                                values: [],
+                            },
+                        ],
+                        time: 5,
+                    });
+                },
+                removePage(pageIndex) {
+                    this.creditPages.splice(pageIndex, 1);
+                },
+                addSubpage(page) {
+                    page.subpages.push({
+                        heading: "New Subpage Heading",
+                        values: [],
+                    });
+                },
+                removeSubpage(page, subpageIndex) {
+                    page.subpages.splice(subpageIndex, 1);
+                },
+                exportToJson() {
+                    // Convert textarea values to arrays before exporting
+                    const formattedCreditPages = this.creditPages.map(page => ({
+                        ...page,
+                        subpages: page.subpages.map(subpage => ({
+                            ...subpage,
+                            values: typeof subpage.values === 'string' ? subpage.values.split('\n').filter(line => line.trim() !== '') : subpage.values,
+                        })),
+                    }));
+
+                    const jsonString = JSON.stringify(formattedCreditPages, null, 2);
+                    const blob = new Blob([jsonString], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "credit-data.json";
+                    a.click();
+
+                    URL.revokeObjectURL(url);
+                },
+                importFromJson(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const parsedData = JSON.parse(e.target.result);
+                                this.creditPages = parsedData.map(page => ({
+                                    ...page,
+                                    subpages: page.subpages.map(subpage => ({
+                                        ...subpage,
+                                        values: Array.isArray(subpage.values) ? subpage.values.join('\n') : subpage.values,
+                                    })),
+                                }));
+                            } catch (error) {
+                                console.error("Error parsing JSON:", error);
+                                alert("Invalid JSON file.");
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                },
+                importFromJsonInput() {
+                    try {
+                        const parsedData = JSON.parse(this.jsonInput);
+                        this.creditPages = parsedData.map(page => ({
+                            ...page,
+                            subpages: page.subpages.map(subpage => ({
+                                ...subpage,
+                                values: Array.isArray(subpage.values) ? subpage.values.join('\n') : subpage.values,
+                            })),
+                        }));
+                        this.jsonInput = ""; // Clear the input field
+                    } catch (error) {
+                        console.error("Error parsing JSON:", error);
+                        alert("Invalid JSON input.");
+                    }
+                },
+            },
+        });
+
+        app.mount("#app");
+    </script>
+</body>
+</html>
